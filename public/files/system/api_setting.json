@@ -1,1 +1,7 @@
-{"xendit_api_key":"xnd_development_1c3tZ0pxJFaqWU6xyxJzryXhaV7e5aAV0Xr9cptOXi7h5B5SWxkJ2TdfFeYW59W","wa_api_key":"qMXfspAnVW0HmS3Bk4wG","wa_number":"6285156619657"}
+{
+    "xendit_api_key": "xnd_development_1c3tZ0pxJFaqWU6xyxJzryXhaV7e5aAV0Xr9cptOXi7h5B5SWxkJ2TdfFeYW59W",
+    "wa_url": "https:\/\/wa.weddingcnk.com\/api\/send-message.php",
+    "wa_api_key": "qMXfspAnVW0HmS3Bk4wG",
+    "wa_number": "6285156619657",
+    "auto_reject_kurir": "3"
+}

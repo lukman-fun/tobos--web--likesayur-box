@@ -28,22 +28,29 @@ class ContentController extends BaseController
         return view('admin/content/index');
     }
 
-    public function get()
+    public function get($id)
     {
-        $data = $this->model->getCatalog();
-        return DataTable::of($data)
-            ->addNumbering('no')
-            ->edit('image', function ($row) {
-                return ($row->image != '') ? '<img src="' . base_url() . '/' . $row->image . '" alt="" class="img-fluid rounded-lg shadow" style="height: 40px; width: 120px;">' : 'NO IMAGE';
-            })
-            ->add('action', function ($row) {
-                return '<div class="d-flex justify-content-center">
-            <a href="' . base_url('admin/content-items/' . $row->id) . '" class="btn btn-success btn-sm mr-1"><i class="fe fe-database"></i></a>
-            <button type="button" class="btn btn-info btn-sm mr-1" onclick="onEdit(`' . $row->id . '`)"><i class="fe fe-edit"></i></button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="onDelete(`' . $row->id . '`)"><i class="fe fe-trash"></i></button>
-        </div>';
-            })
-            ->toJson(true);
+        if ($id == 'all') {
+            $data = $this->model->getCatalog();
+            return DataTable::of($data)
+                ->addNumbering('no')
+                ->edit('image', function ($row) {
+                    return ($row->image != '') ? '<img src="' . base_url() . '/' . $row->image . '" alt="" class="img-fluid rounded-lg shadow" style="height: 40px; width: 120px;">' : 'NO IMAGE';
+                })
+                ->add('action', function ($row) {
+                    return '<div class="d-flex justify-content-center">
+                <a href="' . base_url('admin/content-items/' . $row->id) . '" class="btn btn-success btn-sm mr-1"><i class="fe fe-database"></i></a>
+                <button type="button" class="btn btn-info btn-sm mr-1" onclick="onEdit(`' . $row->id . '`)"><i class="fe fe-edit"></i></button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="onDelete(`' . $row->id . '`)"><i class="fe fe-trash"></i></button>
+            </div>';
+                })
+                ->toJson(true);
+        } else {
+            return $this->response->setJSON([
+                'status' => 200,
+                'data' => $this->model->find($id)
+            ]);
+        }
     }
 
     public function store()
@@ -70,6 +77,42 @@ class ContentController extends BaseController
 
         $data = array_merge($data, ['slug' => url_title($data['title'], '-', true)]);
         $this->model->save($data);
+        return $this->response->setJSON(['status' => 200]);
+    }
+
+    public function update($id)
+    {
+        $data = $this->request->getPost();
+        unset($data['type']);
+        $file = $this->request->getFile('image');
+
+        $valid = $this->validate([
+            'title' => 'required',
+            'sub_title' => 'required'
+        ]);
+
+        if (!$valid) return $this->response->setJSON([
+            'status' => 404,
+            'errors' => \Config\Services::validation()->getErrors()
+        ]);
+
+        if ($file->isValid()) {
+            $this->del_image($id);
+            $fileName = $file->getRandomName();
+            $data = array_merge($data, ['image' => $this->path_content . '/' . $fileName]);
+            $file->move($this->path_content, $fileName);
+        }
+
+        $data = array_merge($data, ['slug' => url_title($data['title'], '-', true)]);
+        $this->model->update($id, $data);
+        return $this->response->setJSON(['status' => 200]);
+    }
+
+    public function delete($id)
+    {
+        $this->del_image($id);
+        $this->model->delete($id);
+        (new ItemCatalog())->where('catalog_id', $id)->delete();
         return $this->response->setJSON(['status' => 200]);
     }
 
@@ -143,13 +186,20 @@ class ContentController extends BaseController
             ->toJson(true);
     }
 
-    public function updateItems($catalog_id, $product_id){
+    public function updateItems($catalog_id, $product_id)
+    {
         $model = new ItemCatalog();
-        if($model->where(['catalog_id' => $catalog_id, 'product_id' => $product_id])->first()){
+        if ($model->where(['catalog_id' => $catalog_id, 'product_id' => $product_id])->first()) {
             $model->where(['catalog_id' => $catalog_id, 'product_id' => $product_id])->delete();
-        }else{
+        } else {
             $model->save(['catalog_id' => $catalog_id, 'product_id' => $product_id]);
         }
         return $this->response->setJSON(['status' => 200]);
+    }
+
+    public function del_image($id)
+    {
+        $img = $this->model->find($id)['image'];
+        if ($img != '') unlink(FCPATH . $this->model->find($id)['image']);
     }
 }

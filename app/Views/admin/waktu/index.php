@@ -1,11 +1,11 @@
 <?= $this->extend('admin/template/app') ?>
 
 <?= $this->section('title') ?>
-Management Category
+Management Waktu Pengiriman
 <?= $this->endSection() ?>
 
 <?= $this->section('name_page') ?>
-Management Category
+Management Waktu Pengiriman
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -52,7 +52,7 @@ Management Category
                 <div class="row">
                     <div class="form-group col-12 col-md-6">
                         <label for="">Waktu</label>
-                        <input type="text" name="type" value="add">
+                        <input type="text" name="type" value="add" hidden>
                         <input type="text" name="name" class="form-control" placeholder="Enter Waktu" required>
                     </div>
                     <div class="form-group col-12 col-md-6">

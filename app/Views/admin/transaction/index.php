@@ -434,5 +434,38 @@ Management Transaction
             }
         });
     });
+
+    function onKurirStatus(msg, nmr, sts) {
+        Swal.fire({
+            icon: 'question',
+            text: sts == '1' ? 'Are you sure you want to approve this courier?' : 'Are you sure you want to reject this courier?',
+            showCancelButton: true,
+            confirmButtonColor: sts == '1' ? '#47B04B' : '#dc3545',
+            confirmButtonText: sts == '1' ? 'Approve Courier' : 'Reject Courier'
+        }).then((confirm) => {
+            if (confirm.isConfirmed) {
+                $.ajax({
+                    url: window.api_url + 'transaction-confirm',
+                    type: 'POST',
+                    data: JSON.stringify({
+                        "from" : nmr,
+                        "message" : msg
+                    }),
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status == 200) {
+                            Swal.fire({
+                                title: 'Success!',
+                                icon: 'success',
+                                showConfirmButton: false,
+                                timer: 1000
+                            })
+                            table.ajax.reload();
+                        }
+                    }
+                })
+            }
+        })
+    }
 </script>
 <?= $this->endSection() ?>

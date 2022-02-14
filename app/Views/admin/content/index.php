@@ -94,7 +94,7 @@ Management Content
         processing: true,
         serverSide: true,
         responsive: true,
-        ajax: window.api_url + '/content-get',
+        ajax: window.api_url + '/content-get/all',
         order: [
             [3, 'desc']
         ],
@@ -193,7 +193,8 @@ Management Content
                     $("label[for='img-upload']").css({
                         'border': ''
                     });
-                    nama.val(data.name);
+                    title.val(data.title);
+                    sub_title.val(data.sub_title);
                     modalContent.modal({
                         backdrop: 'static'
                     });
@@ -222,7 +223,7 @@ Management Content
                                 showConfirmButton: false,
                                 timer: 1000
                             })
-                            table()
+                            table.ajax.reload();
                         }
                     }
                 })

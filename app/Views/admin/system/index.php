@@ -55,6 +55,10 @@ Pengaturan System
                 </div>
                 <hr>
                 <div class="form-group">
+                    <label for="">Whatsapp URL</label>
+                    <input type="text" name="wa_url" id="" class="form-control" placeholder="Whatsapp URL" value="<?= isset($api_setting->wa_url) ? $api_setting->wa_url : '' ?>">
+                </div>
+                <div class="form-group">
                     <label for="">Whatsapp API Key</label>
                     <input type="text" name="wa_api_key" id="" class="form-control" placeholder="Whatsapp API Key" value="<?= isset($api_setting->wa_api_key) ? $api_setting->wa_api_key : '' ?>">
                 </div>
@@ -68,6 +72,20 @@ Pengaturan System
                         <input type="text" class="form-control" placeholder="Whatsapp Webhook" value="<?= base_url('admin/api/transaction-confirm') ?>" id="wa_webhook">
                         <div class="input-group-append">
                             <button class="btn btn-secondary" type="button" onclick="copyToClipboard('#wa_webhook')"><i class="fe fe-clipboard"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="form-group">
+                    <label for="">Auto Reject (Minute)</label>
+                    <input type="number" name="auto_reject_kurir" id="" class="form-control" placeholder="Auto Reject Kurir Time" value="<?= isset($api_setting->auto_reject_kurir) ? $api_setting->auto_reject_kurir : '' ?>">
+                </div>
+                <div class="form-group">
+                    <label for="">Auto Reject Url (Cronjob)</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Auto Reject Url (Cronjob)" value="<?= base_url('admin/api/cronjob-transaction-kurir') ?>" id="auto_reject_url">
+                        <div class="input-group-append">
+                            <button class="btn btn-secondary" type="button" onclick="copyToClipboard('#auto_reject_url')"><i class="fe fe-clipboard"></i></button>
                         </div>
                     </div>
                 </div>

@@ -87,8 +87,10 @@ $routes->group('admin', function($routes){
         $routes->post('supplier-update/(:num)', 'Admin\SupplierController::update/$1');
         $routes->get('supplier-delete/(:num)', 'Admin\SupplierController::delete/$1');
 
-        $routes->get('content-get', 'Admin\ContentController::get');
+        $routes->get('content-get/(:any)', 'Admin\ContentController::get/$1');
         $routes->post('content-store', 'Admin\ContentController::store');
+        $routes->post('content-update/(:num)', 'Admin\ContentController::update/$1');
+        $routes->get('content-delete/(:num)', 'Admin\ContentController::delete/$1');
         $routes->get('content-items/(:num)/(:num)', 'Admin\ContentController::getItems/$1/$2');
         $routes->get('content-items-update/(:num)/(:num)', 'Admin\ContentController::updateItems/$1/$2');
 
@@ -115,6 +117,8 @@ $routes->group('admin', function($routes){
         $routes->post('system-payment-channel-store', 'Admin\SystemController::storePaymentChannel');
         $routes->post('system-api-setting-store', 'Admin\SystemController::storeApiSetting');
         $routes->post('confirm-payment', 'Admin\TransactionController::confirmPayment');
+
+        $routes->get('cronjob-transaction-kurir', 'Admin\CronjobController::kurirExp');
     });
 });
 

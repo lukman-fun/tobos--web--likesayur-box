@@ -6,7 +6,6 @@ use App\Controllers\BaseController;
 use App\Models\DetailTransaction;
 use App\Models\Kurir;
 use App\Models\Transaction;
-use App\Models\CronjobKurir;
 use Hermawan\DataTables\DataTable;
 
 class TransactionController extends BaseController
@@ -68,14 +67,9 @@ class TransactionController extends BaseController
                     return $sts;
                 })
                 ->add('kurir', function ($row) {
-                    $kurir_trans = (new Kurir())->where('id', $row->kurir_id)->first();
                     switch ($row->kurir_status) {
                         case '0':
                             $stskr = '<span class="badge badge-warning">Menunggu ' . $row->kurir_name . '</span>';
-                            $stskr .='<div>';
-                            $stskr .= '<button type="button" class="btn btn-success btn-sm" onclick="onKurirStatus(`' . ($row->no_transaction . '|' . $row->kurir_id . '|' . 'setuju') . '`, `' . ($kurir_trans ? $kurir_trans['phone'] : '') . '`, `1`)"><i class="fe fe-truck mr-2"></i><i class="fe fe-check"></i></button>';
-                            $stskr .= '<button type="button" class="btn btn-danger btn-sm" onclick="onKurirStatus(`' . ($row->no_transaction . '|' . $row->kurir_id . '|' . 'tolak') . '`, `' . ($kurir_trans ? $kurir_trans['phone'] : '') . '`, `-1`)"><i class="fe fe-truck mr-2"></i><i class="fe fe-x"></i></button>';
-                            $stskr .='</div>';
                             break;
                         case '1':
                             $stskr = '<span class="badge badge-success">' . $row->kurir_name . ' Setuju<span class="badge badge-warning">';
@@ -86,19 +80,18 @@ class TransactionController extends BaseController
                     }
                     return $row->kurir_name == null ? '<span class="text-warning font-weight-bold">Silahkan Pilih Kurir</span>' : $stskr;
                 })
-                ->add('total', function ($row) {
+                ->add('total', function($row){
                     $total = 0;
-                    foreach ((new DetailTransaction())->where('transaction_id', $row->id)->findAll() as $item) {
+                    foreach((new DetailTransaction())->where('transaction_id', $row->id)->findAll() as $item){
                         $total += (json_decode($item['product_data'])->product_price * $item['qty']);
                     }
                     return 'Rp. ' . $total;
                 })
                 ->add('action', function ($row) {
                     $action = '<div class="d-flex justify-content-center">';
-                    if (($row->process == 1 &&  $row->kurir_name == null) || ($row->process == 1 &&  $row->kurir_status == '-1')) {
+                    if( ($row->process == 1 &&  $row->kurir_name == null) || ($row->process == 1 &&  $row->kurir_status == '-1') ){
                         $action .= '<button type="button" class="btn btn-secondary btn-sm" onclick="onKurir(`' . $row->id . '`)"><i class="fe fe-truck"></i></button>';
                     }
-
                     $action .= '<button type="button" class="btn btn-info btn-sm" onclick="onDataView(this)" data-transaction_id="' . $row->id . '" data-delivery="' . base64_encode($row->data_delivery) . '" data-proses="' . $row->process . '" data-status="' . $row->status . '"><i class="fe fe-database"></i></button>';
                     $action .= '<button type="button" class="btn btn-danger btn-sm" onclick="onDelete(`' . $row->id . '`)"><i class="fe fe-trash"></i></button>';
                     $action .= '</div>';
@@ -132,9 +125,9 @@ class TransactionController extends BaseController
         $detail_transaction = (new DetailTransaction())->where('transaction_id', $data['transaction_id'])->findAll();
         $total = 0;
         $listPesanan = "*List Pesanan :*\n";
-        foreach ($detail_transaction as $i => $detail) {
+        foreach($detail_transaction as $i => $detail){
             $productData = json_decode($detail['product_data']);
-            $listPesanan .= ($i + 1) . ". _(" . $productData->product_name . " x" . $detail['qty'] . " = Rp." . ($productData->product_price * $detail['qty']) . ")_\n";
+            $listPesanan .= ($i+1) . ". _(" . $productData->product_name . " x" . $detail['qty'] . " = Rp." . ($productData->product_price * $detail['qty']) . ")_\n" ;
             $total += ($productData->product_price * $detail['qty']);
         }
 
@@ -152,11 +145,10 @@ class TransactionController extends BaseController
         $pesanKurir .= "\n";
         $pesanKurir .= "Total : Rp. " . $total . "\n";
         $pesanKurir .= "======\n\n\n";
-        $pesanKurir .= "penawaran akan berakhir dalam waktu " . (isset($this->apiSetting->auto_reject_kurir) ? $this->apiSetting->auto_reject_kurir : '') . " menit, Silahkan kirim pesan sesuai yang anda pilih di bawah ini";
-        // $pesanKurir .= "Jika Setuju Balas => *" . $transaksi['no_transaction'] . "|" . $data['kurir_id']. "|setuju*\n";
-        // $pesanKurir .= "Jika Menolak Balas => *" . $transaksi['no_transaction'] . "|" . $data['kurir_id']. "|tolak*";
+        $pesanKurir .= "Jika Setuju Balas => *" . $transaksi['no_transaction'] . "|" . $data['kurir_id']. "|setuju*\n";
+        $pesanKurir .= "Jika Menolak Balas => *" . $transaksi['no_transaction'] . "|" . $data['kurir_id']. "|tolak*";
 
-        $wa = $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+        $wa = $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
             'json' => [
                 'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                 'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
@@ -164,108 +156,84 @@ class TransactionController extends BaseController
                 'message' => $pesanKurir
             ]
         ]);
-        $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
-            'json' => [
-                'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
-                'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                'number' => $kurir['phone'],
-                'message' => $transaksi['no_transaction'] . "|" . $data['kurir_id'] . "|setuju"
-            ]
-        ]);
-        $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
-            'json' => [
-                'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
-                'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                'number' => $kurir['phone'],
-                'message' => $transaksi['no_transaction'] . "|" . $data['kurir_id'] . "|tolak"
-            ]
-        ]);
-        if (json_decode($wa->getBody())->status == 1) {
+        if(json_decode($wa->getBody())->status == 1){
             $this->model->update($data['transaction_id'], ['kurir_id' => $kurir['id'], 'kurir_status' => '0']);
-            (new CronjobKurir())->save([
-                'transaction_id' => $data['transaction_id'],
-                'date' => date('Y-m-d H:i:s', strtotime('+' . (isset($this->apiSetting->auto_reject_kurir) ? $this->apiSetting->auto_reject_kurir : '0') . 'minutes ' . date('Y-m-d H:i:s')))
-            ]);
             return $this->response->setJSON(['status' => 200]);
-        } else {
+        }else{
             return $this->response->setJSON(['status' => 404]);
         }
     }
 
-    public function transactionConfirm()
-    {
+    public function transactionConfirm(){
         $data = explode('|', $this->request->getJSON()->message);
-        if (count($data) == 2) {
+        if(count($data) == 2){
             $ts = $this->model->where([
                 'no_transaction' => $data[1],
                 'kurir_status' => '1'
             ])->first();
-            if ($ts) {
-                if ($data[0] == 'diterima' || $data[0] == 'Diterima') {
-                    $this->model->update($ts['id'], ['process' => '3', 'status' => '1']);
+            if($ts){
+                if($data[0] == 'diterima' || $data[0] == 'Diterima'){
+                    $this->model->update($ts['id'], ['status' => '1']);
                     $pesanClient = "Terimakasih sudah berbelanja dengan TOBOS";
-                } else {
+                }else{
                     $pesanClient = "Format pesan salah, silahkan ulangi dengan format yang sesuai";
                 }
-            } else {
+            }else{
                 $pesanClient = "Maaf Data Tidak ditermukan";
             }
-            $wc = $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+            $wc = $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
                 'json' => [
                     'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                     'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                    'number' => str_replace(['@c.us', '@s.whatsapp.net'], '', $this->request->getJSON()->from),
+                    'number' => str_replace(['@c.us', '@s.whatsapp.net'], '', $this->request->getJSON()->sender),
                     'message' => $pesanClient
                 ]
             ]);
-            if (json_decode($wc->getBody())->status == 1) {
+            if(json_decode($wc->getBody())->status == 1){
                 return $this->response->setJSON(['status' => 200]);
-            } else {
+            }else{
                 return $this->response->setJSON(['status' => 404]);
             }
-        } else if (count($data) == 3) {
+        }else if(count($data) == 3){
             $tr = $this->model->where([
                 'no_transaction' => $data[0],
                 'kurir_id' => $data[1],
                 'kurir_status' => '0'
             ])->first();
-            if ($tr) {
-                if ($data[2] == 'setuju') {
+            if($tr){
+                if($data[2] == 'setuju'){
                     $this->model->update($tr['id'], ['kurir_status' => '1']);
-                    (new CronjobKurir())->where('transaction_id', $tr['id'])->delete();
                     $pesanKurir = "Terimakasih sudah menerima tawaran ini, silahkan datang ke kantor";
-                } else if ($data[2] == 'tolak') {
+                }else if($data[2] == 'tolak'){
                     $this->model->update($tr['id'], ['kurir_status' => '-1']);
-                    (new CronjobKurir())->where('transaction_id', $tr['id'])->delete();
                     $pesanKurir = "Terimakasih sudah merespon pesan ini, mungkin lain kali";
-                } else {
+                }else{
                     $pesanKurir = "Format pesan salah, silahkan ulangi dengan format yang sesuai";
                 }
-            } else {
+            }else{
                 $pesanKurir = "Maaf Data Tidak ditermukan";
             }
-            $wa = $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+            $wa = $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
                 'json' => [
                     'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                     'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                    'number' => str_replace(['@c.us', '@s.whatsapp.net'], '', $this->request->getJSON()->from),
+                    'number' => str_replace(['@c.us', '@s.whatsapp.net'], '', $this->request->getJSON()->sender),
                     'message' => $pesanKurir
                 ]
             ]);
-            if (json_decode($wa->getBody())->status == 1) {
+            if(json_decode($wa->getBody())->status == 1){
                 return $this->response->setJSON(['status' => 200]);
-            } else {
+            }else{
                 return $this->response->setJSON(['status' => 404]);
             }
         }
     }
 
-    public function getPesanan($transaction_id)
-    {
+    public function getPesanan($transaction_id){
         $data = (new DetailTransaction())->where('transaction_id', $transaction_id)->findAll();
-        if ($data) {
+        if($data){
             $datas = [];
-            foreach ($data as $item) {
+            foreach($data as $item){
                 $item['product_data'] = json_decode($item['product_data']);
                 array_push($datas, $item);
             }
@@ -273,7 +241,7 @@ class TransactionController extends BaseController
                 'status' => 200,
                 'data' => $datas
             ]);
-        } else {
+        }else{
             return $this->response->setJSON([
                 'status' => 404,
                 'message' => 'Not Found'
@@ -281,44 +249,24 @@ class TransactionController extends BaseController
         }
     }
 
-    public function upPesanan()
-    {
+    public function upPesanan(){
         $data = $this->request->getPost();
         $trans = $this->model->where('id', $data['transaction_id'])->first();
         $data_delivery = json_decode($trans['data_delivery']);
 
-        if ($data['process'] == '3') {
-            $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+        if($data['process'] == '2'){
+            $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
                 'json' => [
                     'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                     'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
                     'number' => $data_delivery->phone,
-                    'message' => 'Terimakasih sudah berbelanja dengan TOBOS'
+                    'message' => 'Pesanan *' . $trans['no_transaction'] . '* sedang dikirim,' . "\n" . 'Jika barang sudah diterima segera balas => *Diterima|' . $trans['no_transaction'] . '*'
                 ]
             ]);
         }
 
-        if ($data['process'] == '2') {
-            $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
-                'json' => [
-                    'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
-                    'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                    'number' => $data_delivery->phone,
-                    'message' => 'Pesanan *' . $trans['no_transaction'] . '* sedang dikirim,' . "\n" . 'Jika barang sudah diterima segera balas dengan pesan di bawah ini'
-                ]
-            ]);
-            $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
-                'json' => [
-                    'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
-                    'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                    'number' => $data_delivery->phone,
-                    'message' => 'Diterima|' . $trans['no_transaction']
-                ]
-            ]);
-        }
-
-        if ($data['status'] == '-1') {
-            $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+        if($data['status'] == '-1'){
+            $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
                 'json' => [
                     'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                     'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
@@ -327,7 +275,7 @@ class TransactionController extends BaseController
                 ]
             ]);
         }
-
+        
         $this->model->update($data['transaction_id'], [
             'process' => $data['process'],
             'status' => $data['status']
@@ -335,18 +283,17 @@ class TransactionController extends BaseController
         return $this->response->setJSON(['status' => 200]);
     }
 
-    public function confirmPayment()
-    {
+    public function confirmPayment(){
         $data = $this->request->getJSON();
         $status = $data->status;
         $noTrans = $data->external_id;
-
-        $trans = $this->model->where(['no_transaction' => $noTrans])->first();
+        
+        $trans = $this->model->where([ 'no_transaction' => $noTrans ])->first();
         $data_delivery = json_decode($trans['data_delivery']);
 
-        switch ($status) {
+        switch($status){
             case "PAID":
-                $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+                $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
                     'json' => [
                         'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                         'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
@@ -354,13 +301,13 @@ class TransactionController extends BaseController
                         'message' => 'Pembayaran berhasil, Pesanan *' . $noTrans . '* Sedang dikemas'
                     ]
                 ]);
-                $this->model->where(['no_transaction' => $noTrans])->set([
+                $this->model->where([ 'no_transaction' => $noTrans ])->set([
                     'process' => '1',
                     'payment_id' => ''
                 ])->update();
                 break;
             case "EXPIRED":
-                $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
+                $this->curl->request('post', 'https://whatsapp.juraganitweb.com/send-message', [
                     'json' => [
                         'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
                         'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
@@ -368,7 +315,7 @@ class TransactionController extends BaseController
                         'message' => 'Pembayaran sudah kadaluarsa, Pesanan *' . $noTrans . '* dibatalkan'
                     ]
                 ]);
-                $this->model->where(['no_transaction' => $noTrans])->set([
+                $this->model->where([ 'no_transaction' => $noTrans ])->set([
                     'status' => '-1',
                     'payment_id' => ''
                 ])->update();
@@ -377,15 +324,5 @@ class TransactionController extends BaseController
         return $this->response->setJSON(['status' => 200]);
     }
 
-    public function a()
-    {
-        $this->curl->request('post', (isset($this->apiSetting->wa_url) ? $this->apiSetting->wa_url : ''), [
-            'json' => [
-                'api_key' => (isset($this->apiSetting->wa_api_key) ? $this->apiSetting->wa_api_key : ''),
-                'sender' => (isset($this->apiSetting->wa_number) ? $this->apiSetting->wa_number : ''),
-                'number' => str_replace(['@c.us', '@s.whatsapp.net'], '', $this->request->getJSON()->from),
-                'message' => 'Webhook Test'
-            ]
-        ]);
-    }
+
 }
