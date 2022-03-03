@@ -153,6 +153,8 @@ $routes->group('api', function($routes){
 
     $routes->get('waktu', 'Api\WaktuController::get');
 
+    $routes->get('profile/(:num)', 'Api\AuthController::getProfile/$1');
+    $routes->post('profile/photo', 'Api\AuthController::updateFotoProfile');
     $routes->post('profile/(:num)', 'Api\AuthController::updateProfile/$1');
 });
 

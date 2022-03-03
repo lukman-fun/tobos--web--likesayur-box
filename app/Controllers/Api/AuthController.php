@@ -21,21 +21,21 @@ class AuthController extends ResourceController
     {
         $data = $this->request->getJSON();
         $valid = $this->model->where(['phone' => $data->phone])->first();
-        if($valid){
+        if ($valid) {
             $pw = $valid['password'];
-            if(password_verify($data->password, $pw)){
+            if (password_verify($data->password, $pw)) {
                 unset($valid['password']);
                 return $this->respond([
                     'status' => 200,
                     'data' => $valid
                 ]);
-            }else{
+            } else {
                 return $this->respond([
                     'status' => 404,
                     'message' => "Password anda salah"
                 ]);
             }
-        }else{
+        } else {
             return $this->respond([
                 'status' => 404,
                 'message' => "Nomor belum terdaftar"
@@ -43,15 +43,16 @@ class AuthController extends ResourceController
         }
     }
 
-    public function daftar(){
+    public function daftar()
+    {
         $data = $this->request->getJSON();
 
-        if($this->model->where(['phone' => $data->phone])->first()){
+        if ($this->model->where(['phone' => $data->phone])->first()) {
             return $this->respond([
                 'status' => 404,
                 'message' => "Nomor sudah digunakan"
             ]);
-        }else{
+        } else {
             $data = array_merge((array)$data, ['password' => password_hash($data->password, PASSWORD_DEFAULT)]);
             $id = $this->model->insert($data);
             $val = $this->model->where(['id' => $id])->first();
@@ -63,20 +64,58 @@ class AuthController extends ResourceController
         }
     }
 
-    public function updateFotoProfile(){
-        
+    public function getProfile($id){
+        $data = $this->model->where(['id' => $id])->first();
+        if ($data) {
+            return $this->respond([
+                'status' => 200,
+                'data' => $data
+            ]);
+        } else {
+            return $this->respond([
+                'status' => 404,
+                'message' => 'Not Found'
+            ]);
+        }
     }
 
-    public function updateProfile($user_id){
+    public function updateFotoProfile()
+    {
         $data = $this->request->getJSON();
-        
-        if($data->password != ''){
+        $img = str_replace(['data:image/png;base64,', 'data:image/jpg;base64,', 'data:image/jpeg;base64,'], '', $data->image);
+        $img = str_replace(' ', '+', $img);
+        $imgdata = base64_decode($img);
+        $filename = 'files/users/' . uniqid() . '.jpg';
+        if (file_put_contents(FCPATH . $filename, $imgdata)) {
+            if ($this->model->find($data->id)['image'] != '' && file_exists(FCPATH . $this->model->find($data->id)['image'])){
+                unlink(FCPATH . $this->model->find($data->id)['image']);
+            }
+            $this->model->update($data->id, [
+                'image' => $filename
+            ]);
+            return $this->respond([
+                'status' => 200,
+                'message' => $filename
+            ]);
+        } else {
+            return $this->respond([
+                'status' => 404,
+                'message' => "Upload Gambar Gagal"
+            ]);
+        }
+    }
+
+    public function updateProfile($user_id)
+    {
+        $data = $this->request->getJSON();
+
+        if ($data->password != '') {
             $data->password = password_hash($data->password, PASSWORD_DEFAULT);
-        }else{
+        } else {
             unset($data->password);
         }
 
-        $this->model->update($user_id, ((array)$data) );
+        $this->model->update($user_id, ((array)$data));
         return $this->respond([
             'status' => 200,
             'message' => 'Update Profile Success'

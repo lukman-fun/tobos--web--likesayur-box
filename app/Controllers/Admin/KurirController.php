@@ -47,8 +47,12 @@ class KurirController extends BaseController
 
         $valid = $this->validate([
             'fullname' => 'required',
-            'phone' => 'required',
+            'phone' => 'required|regex_match[/^(\+62|62|0)/]|is_unique[kurir.phone]',
             'address' => 'required',
+        ],[
+            'phone' => [
+                'regex_match' => 'The phone field is not in the correct format, starting with (0, 62, +62).'
+            ]
         ]);
 
         if(!$valid) return $this->response->setJSON([
@@ -56,7 +60,7 @@ class KurirController extends BaseController
             'errors' => \Config\Services::validation()->getErrors()
         ]);
 
-        $this->model->save($data);
+        $this->model->save(array_merge($data, [ 'phone' => preg_replace('/^(\+62|62|0)/', '62', $data['phone']) ]));
         return $this->response->setJSON([
             'status' => 200,
         ]);
@@ -70,7 +74,11 @@ class KurirController extends BaseController
         $valid = $this->validate([
             'fullname' => 'required',
             'address' => 'required',
-            'phone' => 'required'
+            'phone' => 'required|regex_match[/^(\+62|62|0)/]|is_unique[kurir.phone,id,' . $id . ']'
+        ],[
+            'phone' => [
+                'regex_match' => 'The phone field is not in the correct format, starting with (0, 62, +62).'
+            ]
         ]);
 
         if(!$valid) return $this->response->setJSON([
@@ -78,7 +86,7 @@ class KurirController extends BaseController
             'errors' => \Config\Services::validation()->getErrors()
         ]);
 
-        $this->model->update($id, $data);
+        $this->model->update($id, array_merge($data, [ 'phone' => preg_replace('/^(\+62|62|0)/', '62', $data['phone']) ]));
         return $this->response->setJSON(['status' => 200]);
     }
 

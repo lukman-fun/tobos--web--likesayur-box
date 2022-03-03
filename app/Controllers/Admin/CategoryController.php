@@ -110,6 +110,6 @@ class CategoryController extends BaseController
 
     public function del_image($id){
         $img = $this->model->find($id)['image'];
-        if($img != '') unlink(FCPATH . $this->model->find($id)['image']);
+        if($img != '' && file_exists(FCPATH . $img)) unlink(FCPATH . $this->model->find($id)['image']);
     }
 }

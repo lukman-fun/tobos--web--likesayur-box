@@ -27,7 +27,7 @@ class AddUsers extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 100,
                 'null' => false,
-                'unique' => true
+                
             ],
             'password' => [
                 'type' => 'VARCHAR',

@@ -56,9 +56,13 @@ class UsersController extends BaseController
 
         $valid = $this->validate([
             'fullname' => 'required',
-            'phone' => 'required|is_unique[users.phone]',
+            'phone' => 'required|regex_match[/^(\+62|62|0)/]|is_unique[users.phone]',
             'address' => 'required',
             'password' => 'required'
+        ], [
+            'phone' => [
+                'regex_match' => 'The phone field is not in the correct format, starting with (0, 62, +62).'
+            ]
         ]);
 
         if(!$valid) return $this->response->setJSON([
@@ -72,7 +76,7 @@ class UsersController extends BaseController
             $file->move($this->path_users, $fileName);
         }
 
-        $data = array_merge($data, ['password' => password_hash($data['password'], PASSWORD_DEFAULT)]);
+        $data = array_merge($data, ['phone' => preg_replace('/^(\+62|62|0)/', '62', $data['phone']), 'password' => password_hash($data['password'], PASSWORD_DEFAULT)]);
         $this->model->save($data);
         return $this->response->setJSON([
             'status' => 200,
@@ -87,8 +91,12 @@ class UsersController extends BaseController
 
         $valid = $this->validate([
             'fullname' => 'required',
-            'phone' => 'required|is_unique[users.phone,id,' . $id . ']',
+            'phone' => 'required|regex_match[/^(\+62|62|0)/]|is_unique[users.phone,id,' . $id . ']',
             'address' => 'required',
+        ],[
+            'phone' => [
+                'regex_match' => 'The phone field is not in the correct format, starting with (0, 62, +62).'
+            ]
         ]);
 
         if(!$valid) return $this->response->setJSON([
@@ -109,7 +117,10 @@ class UsersController extends BaseController
             unset($data['password']);
         }
 
-        $this->model->update($id, $data);
+        $this->model->update($id, array_merge(
+            $data, 
+            ['phone' => preg_replace('/^(\+62|62|0)/', '62', $data['phone'])]
+        ));
         return $this->response->setJSON(['status' => 200]);
     }
 
@@ -121,6 +132,6 @@ class UsersController extends BaseController
 
     public function del_image($id){
         $img = $this->model->find($id)['image'];
-        if($img != '') unlink(FCPATH . $this->model->find($id)['image']);
+        if($img != '' && file_exists(FCPATH . $img)) unlink(FCPATH . $this->model->find($id)['image']);
     }
 }

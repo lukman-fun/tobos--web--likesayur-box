@@ -27,6 +27,7 @@ class AddKurir extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 16,
                 'null' => true,
+                'unique' => true
             ],
             'address' => [
                 'type' => 'VARCHAR',
